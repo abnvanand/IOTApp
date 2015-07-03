@@ -1,19 +1,25 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:tools="http://schemas.android.com/tools"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/topContainer"
-                android:background="#252525"
-                tools:context=".MainActivity">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:id="@+id/topContainer"
+              android:background="#252525"
+              tools:context=".MainActivity"
+              android:orientation="vertical">
 
 
+    <FrameLayout
+        android:id="@+id/cameraPreview"
+        android:layout_gravity="center"
+        android:layout_width="100dp"
+        android:background="#fff"
+        android:layout_height="100dp"
+       />
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/listTransactions"
+        android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
         >
-
     </android.support.v7.widget.RecyclerView>
-
-</RelativeLayout>
+</LinearLayout>

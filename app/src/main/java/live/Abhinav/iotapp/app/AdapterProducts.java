@@ -82,10 +82,10 @@ public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHo
             int position = getLayoutPosition();
 
 //            context.startActivity(new Intent(context, SubActivity.class));
-            /*if (clickListener != null) {
+            if (clickListener != null) {
                 clickListener.itemClicked(v, position);
-            }*/
-            Toast.makeText(context, "Item clicked at: " + getLayoutPosition(), Toast.LENGTH_SHORT).show();
+            }
+//            Toast.makeText(context, "Item clicked at: " + getLayoutPosition(), Toast.LENGTH_SHORT).show();
             Product currProduct = productArrayList.get(position);
             currProduct.setIsChecked(!currProduct.isChecked());
             checkBox.setChecked(currProduct.isChecked());
