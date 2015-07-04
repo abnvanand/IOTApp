@@ -5,19 +5,26 @@
               android:id="@+id/topContainer"
               android:background="#252525"
               tools:context=".MainActivity"
-              android:orientation="vertical">
-
-
+              android:orientation="vertical"
+              android:weightSum="8"
+              >
     <FrameLayout
         android:id="@+id/cameraPreview"
         android:layout_gravity="center"
-        android:layout_width="100dp"
+        android:layout_width="fill_parent"
         android:background="#fff"
-        android:layout_height="100dp"
-       />
+        android:layout_marginLeft="50dp"
+        android:layout_marginRight="50dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:layout_height="fill_parent"
+        android:layout_weight="5"
+        android:padding="5dp"
+        />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recyclerView"
+        android:layout_weight="3"
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
         >

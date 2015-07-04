@@ -12,6 +12,8 @@ import android.widget.Toast;
 import com.android.volley.toolbox.ImageLoader;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by Abhinav on 7/3/2015.
@@ -27,7 +29,6 @@ public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHo
 
 
     public AdapterProducts(Context context) {
-
         layoutInflater = LayoutInflater.from(context);
         volleySingleton = AppController.getInstance();
         this.context = context;
@@ -38,10 +39,25 @@ public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHo
         notifyItemRangeChanged(0, arrayList.size());
     }
 
+    public void test(String barcodeString) {
+        for (int i = 0; i < this.productArrayList.size(); i++) {
+            if (productArrayList.get(i).getpSNo().equals(barcodeString)) {
+                Toast.makeText(context, "Inside if", Toast.LENGTH_LONG).show();
+                Product p=productArrayList.remove(i);
+                p.setIsChecked(true);
+                productArrayList.add(p);
+                notifyItemRangeChanged(0, productArrayList.size());
+            }
+        }
+    }
+
+    public ArrayList<Product> getProductArrayList() {
+        return productArrayList;
+    }
+
     @Override
     public ViewHolderProducts onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = layoutInflater.inflate(R.layout.list_single_row, parent, false);
-
         ViewHolderProducts viewHolder = new ViewHolderProducts(view);
         return viewHolder;
     }
@@ -52,7 +68,6 @@ public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHo
         holder.checkBox.setChecked(curentProduct.isChecked());
         holder.tv_productName.setText(curentProduct.getpName());
         holder.tv_productSNo.setText(curentProduct.getpSNo());
-
     }
 
     @Override
@@ -113,5 +128,9 @@ public class AdapterProducts extends RecyclerView.Adapter<AdapterProducts.ViewHo
         productArrayList.add(0, productArrayList.remove(position));
         notifyItemMoved(position, 0);
     }
-}
 
+    public boolean checkBarCode() {
+//        productArrayList.indexOf(productArrayList.)
+        return true;
+    }
+}

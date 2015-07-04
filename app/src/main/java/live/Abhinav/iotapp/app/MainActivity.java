@@ -1,10 +1,10 @@
 package live.Abhinav.iotapp.app;
 
+import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
 import android.os.Handler;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -22,13 +22,34 @@ import net.sourceforge.zbar.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import de.keyboardsurfer.android.widget.crouton.Configuration;
+import de.keyboardsurfer.android.widget.crouton.Crouton;
+
+import de.keyboardsurfer.android.widget.crouton.Style;
 
 import java.util.ArrayList;
 
+import static live.Abhinav.iotapp.app.Keys.*;
 
-public class MainActivity extends ActionBarActivity implements AdapterProducts.ClickListener {
+
+public class MainActivity extends Activity implements AdapterProducts.ClickListener, View.OnClickListener {
+
+    /**
+     * Crouton
+     */
+    private static final Style INFINITE = new Style.Builder().
+            setBackgroundColorValue(Style.holoBlueLight).build();
+    private static final Configuration CONFIGURATION_INFINITE = new Configuration.Builder()
+            .setDuration(Configuration.DURATION_INFINITE)
+            .build();
+    private Crouton infiniteCrouton;
+
+    ArrayList<String> croutonArrayList = new ArrayList<String>();
+    //--------end of crouton------------
+
 
     //Camera-----------------------start
+    FrameLayout cameraPreview;
     private Camera mCamera;
     private CameraPreview mPreview;
     private Handler autoFocusHandler;
@@ -40,7 +61,6 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
 
     private boolean barcodeScanned = false;
     private boolean previewing = true;
-
 
 
     //Camera-----------------------end
@@ -77,6 +97,19 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
 
         adapterProducts = new AdapterProducts(getApplicationContext());
         adapterProducts.setClickListener(this);
+        cameraPreview = (FrameLayout) findViewById(R.id.cameraPreview);
+        cameraPreview.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(barcodeScanned) {
+                    barcodeScanned=false;
+
+                    mCamera.setPreviewCallback(previewCb);
+                    mCamera.startPreview();
+                    previewing=true;
+                }
+            }
+        });
         recyclerView.setAdapter(adapterProducts);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
@@ -87,22 +120,16 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
         productArrayList.add(new Product(false, "1", "Petrol"));
         productArrayList.add(new Product(false, "1", "Nutrela"));
         adapterProducts.setProductArrayList(productArrayList);*/
-        prepareCamera();
-
+//        prepareCamera();
         sendJsonRequest();
 
-
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        releaseCamera();
-    }
+
 
     private void sendJsonRequest() {
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET,
-                "http://192.168.2.16/volley/list.json",
+                "http://ecomxebia.esy.es/list.php",
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
@@ -131,20 +158,18 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
                     Log.d("Lifecycle", "Inside loop");
 
                     JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    String tDate = jsonObject.getString("price");
-                    String tOtherPartyName = jsonObject.getString("name");
+                    String tSNo = jsonObject.getString(KEY_SNO);
+                    String tProductName = jsonObject.getString(KEY_PNAME);
 
-
-                    data.append(tDate + " " + tOtherPartyName + " " + "\n");
+                    data.append(tSNo + " " + tProductName + " " + "\n");
 
                     Product product = new Product();
                     product.setIsChecked(false);
-                    product.setpName(tOtherPartyName);
-                    product.setpSNo(tDate);
+                    product.setpName(tProductName);
+                    product.setpSNo(tSNo);
 
                     listTransactions.add(product);
                     Log.d("Lifecycle", "Inside loop");
-
                 }
                 Log.d("Lifecycle2", listTransactions.toString());
             } catch (JSONException e) {
@@ -157,16 +182,14 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
     @Override
     public void itemClicked(View view, int position) {
 //        Toast.makeText(this, "Position " + position, Toast.LENGTH_SHORT).show();
-
+        showCrouton("Position=" + position);
         recyclerView.scrollToPosition(0);
-
     }
 
     /**
      * Camera specific methods
      * -------------start-----------------
      */
-
     public void prepareCamera() {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
@@ -179,8 +202,8 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
         scanner.setConfig(0, Config.Y_DENSITY, 3);
 
         mPreview = new CameraPreview(this, mCamera, previewCb, autoFocusCB);
-        FrameLayout preview = (FrameLayout) findViewById(R.id.cameraPreview);
-        preview.addView(mPreview);
+
+        cameraPreview.addView(mPreview);
 
     }
 
@@ -200,8 +223,10 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
         if (mCamera != null) {
             previewing = false;
             mCamera.setPreviewCallback(null);
+            mPreview.getHolder().removeCallback(mPreview);
             mCamera.release();
             mCamera = null;
+            cameraPreview.removeView(mPreview);
         }
     }
 
@@ -231,6 +256,7 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
                 for (Symbol sym : syms) {
                     // scanText.setText("barcode result " + sym.getData());
                     Toast.makeText(getApplicationContext(), sym.getData(), Toast.LENGTH_SHORT).show();
+                    adapterProducts.test("63000");
                     barcodeScanned = true;
                 }
             }
@@ -247,4 +273,58 @@ public class MainActivity extends ActionBarActivity implements AdapterProducts.C
  * Camera specific methods
  * -------------end-----------------
  */
+
+
+    /**
+     * Crouton COde
+     */
+    private void showCrouton(String croutonText) {
+        croutonArrayList.add(croutonText);
+        Crouton.cancelAllCroutons();
+
+        final Crouton crouton;
+        crouton = Crouton.makeText(this, croutonArrayList.get(croutonArrayList.size() - 1), INFINITE);
+//        infiniteCrouton = crouton;
+        crouton.setOnClickListener(this).setConfiguration(CONFIGURATION_INFINITE).show();
+    }
+
+    @Override
+    public void onClick(View v) {
+        Toast.makeText(this, "Item Closed", Toast.LENGTH_LONG).show();
+        removeCrouton();
+    }
+
+    public void removeCrouton() {
+
+        if (croutonArrayList.size() > 0) {
+            croutonArrayList.remove(croutonArrayList.size() - 1);
+            Crouton.cancelAllCroutons();
+            if (croutonArrayList.size() > 0) {
+                Crouton crouton;
+                crouton = Crouton.makeText(this, croutonArrayList.get(croutonArrayList.size() - 1), INFINITE);
+                crouton.setOnClickListener(this).setConfiguration(CONFIGURATION_INFINITE).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d("Anand", "onDestroy");
+
+        Crouton.cancelAllCroutons();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d("Anand","onResume");
+        prepareCamera();
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d("Anand", "onPause");
+        releaseCamera();
+    }
 }

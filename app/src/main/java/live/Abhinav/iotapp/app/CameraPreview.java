@@ -15,7 +15,7 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 
-/** A basic Camera preview class */
+/** A basic Camera cameraPreview class */
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder mHolder;
     private Camera mCamera;
@@ -55,7 +55,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
-        // The Surface has been created, now tell the camera where to draw the preview.
+        // The Surface has been created, now tell the camera where to draw the cameraPreview.
         try {
             mCamera.setPreviewDisplay(holder);
         } catch (IOException e) {
@@ -64,24 +64,24 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        // Camera preview released in activity
+        // Camera cameraPreview released in activity
     }
 
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         /*
-         * If your preview can change or rotate, take care of those events here.
-         * Make sure to stop the preview before resizing or reformatting it.
+         * If your cameraPreview can change or rotate, take care of those events here.
+         * Make sure to stop the cameraPreview before resizing or reformatting it.
          */
         if (mHolder.getSurface() == null){
-          // preview surface does not exist
+          // cameraPreview surface does not exist
           return;
         }
 
-        // stop preview before making changes
+        // stop cameraPreview before making changes
         try {
             mCamera.stopPreview();
         } catch (Exception e){
-          // ignore: tried to stop a non-existent preview
+          // ignore: tried to stop a non-existent cameraPreview
         }
 
         try {
