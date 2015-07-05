@@ -1,9 +1,17 @@
 package live.Abhinav.iotapp.app;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.FragmentManager;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -12,6 +20,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -33,6 +42,26 @@ import static live.Abhinav.iotapp.app.Keys.*;
 
 
 public class MainActivity extends Activity implements AdapterProducts.ClickListener, View.OnClickListener {
+
+    /**
+     * Bluetooth
+     */
+    private ArrayList<BluetoothDevice> mLeDevices = new ArrayList<BluetoothDevice>();
+
+
+    private BluetoothAdapter mBluetoothAdapter;
+    private boolean mScanning;
+    private Handler mHandler;
+    //-----------------------
+    TextView tv_deviceAddress;
+    TextView tv_deviceName;
+    ArrayList<String> arrayListName = new ArrayList<String>();
+    ArrayList<String> arrayListAddress = new ArrayList<String>();
+    //-----------------------
+    private static final int REQUEST_ENABLE_BT = 1;
+
+    // Stops scanning after 10 seconds.
+    private static final long SCAN_PERIOD = 6000000;
 
     /**
      * Crouton
@@ -273,7 +302,91 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
  * Camera specific methods
  * -------------end-----------------
  */
+/**
+ * Bluetooth method
+ */
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public void prepareBluetooth() {
+        mHandler = new Handler();
 
+        // Use this check to determine whether BLE is supported on the device.  Then you can
+        // selectively disable BLE-related features.
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            Toast.makeText(this, "BLE not supported", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+        // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
+        // BluetoothAdapter through BluetoothManager.
+        final BluetoothManager bluetoothManager =
+                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = bluetoothManager.getAdapter();
+
+        // Checks if Bluetooth is supported on the device.
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this, "Bluetooth not supported", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+    }
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    private void scanLeDevice(final boolean enable) {
+        if (enable) {
+            // Stops scanning after a pre-defined scan period.
+            mHandler.postDelayed(new Runnable() {
+                @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+                @Override
+                public void run() {
+                    mScanning = false;
+                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                    invalidateOptionsMenu();
+                }
+            }, SCAN_PERIOD);
+
+            mScanning = true;
+            mBluetoothAdapter.startLeScan(mLeScanCallback);
+        } else {
+            mScanning = false;
+            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+        }
+        invalidateOptionsMenu();
+    }
+    // Device scan callback.
+    private BluetoothAdapter.LeScanCallback mLeScanCallback =
+            new BluetoothAdapter.LeScanCallback() {
+
+                @Override
+                public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!arrayListAddress.contains(device.getAddress())) {
+                                mLeDevices.add(device);
+                                arrayListName.add(device.getName() + " ");
+                                arrayListAddress.add(device.getAddress() + " ");
+
+                                Log.d("Lifecycle", device.getName() + " " + device.getAddress());
+//                                if (arrayListAddress.size() > 0) {
+                                String deviceAddress = arrayListAddress.get(arrayListAddress.size() - 1);
+                                String deviceName = arrayListName.get(arrayListName.size() - 1);
+                                Toast.makeText(MainActivity.this,
+                                        device.getName() + " " + device.getAddress(),Toast.LENGTH_LONG).show();
+
+//                                tv_deviceName.setText(deviceName);
+//                                tv_deviceAddress.setText(deviceAddress);
+//                                }
+                            }
+//                    mLeDeviceListAdapter.notifyDataSetChanged();
+                        }
+                    });
+                }
+            };
+
+    public void addDevice(BluetoothDevice device) {
+        if (!mLeDevices.contains(device)) {
+            mLeDevices.add(device);
+        }
+    }
 
     /**
      * Crouton COde
@@ -318,13 +431,36 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d("Anand","onResume");
+        Log.d("Anand", "onResume");
         prepareCamera();
+        prepareBluetooth();
+        // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
+        // fire an intent to display a dialog asking the user to grant permission to enable it.
+        if (!mBluetoothAdapter.isEnabled()) {
+            if (!mBluetoothAdapter.isEnabled()) {
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            }
+        }
+
+        scanLeDevice(true);
     }
     @Override
     protected void onPause() {
         super.onPause();
         Log.d("Anand", "onPause");
         releaseCamera();
+        scanLeDevice(false);
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // User chose not to enable Bluetooth.
+        if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED) {
+            finish();
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
 }

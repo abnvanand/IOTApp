@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId "live.Abhinav.iotapp.app"
-        minSdkVersion 15
+        minSdkVersion 18
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
