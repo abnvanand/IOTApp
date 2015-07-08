@@ -22,11 +22,9 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
+import com.android.volley.*;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.StringRequest;
 import net.sourceforge.zbar.*;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -37,6 +35,8 @@ import de.keyboardsurfer.android.widget.crouton.Crouton;
 import de.keyboardsurfer.android.widget.crouton.Style;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static live.Abhinav.iotapp.app.Keys.*;
 
@@ -130,12 +130,12 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
         cameraPreview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(barcodeScanned) {
-                    barcodeScanned=false;
+                if (barcodeScanned) {
+                    barcodeScanned = false;
 
                     mCamera.setPreviewCallback(previewCb);
                     mCamera.startPreview();
-                    previewing=true;
+                    previewing = true;
                 }
             }
         });
@@ -155,10 +155,9 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
     }
 
 
-
     private void sendJsonRequest() {
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET,
-                "http://ecomxebia.esy.es/list.php",
+                Endpoints.URL_LIST,
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
@@ -211,7 +210,7 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
     @Override
     public void itemClicked(View view, int position) {
 //        Toast.makeText(this, "Position " + position, Toast.LENGTH_SHORT).show();
-        showCrouton("Position=" + position);
+//        showCrouton("Position=" + position);
         recyclerView.scrollToPosition(0);
     }
 
@@ -285,7 +284,7 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
                 for (Symbol sym : syms) {
                     // scanText.setText("barcode result " + sym.getData());
                     Toast.makeText(getApplicationContext(), sym.getData(), Toast.LENGTH_SHORT).show();
-                    adapterProducts.test("63000");
+                    adapterProducts.test(sym.getData());
                     barcodeScanned = true;
                 }
             }
@@ -302,9 +301,9 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
  * Camera specific methods
  * -------------end-----------------
  */
-/**
- * Bluetooth method
- */
+    /**
+     * Bluetooth method
+     */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public void prepareBluetooth() {
         mHandler = new Handler();
@@ -329,6 +328,7 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
             return;
         }
     }
+
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     private void scanLeDevice(final boolean enable) {
         if (enable) {
@@ -351,6 +351,7 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
         }
         invalidateOptionsMenu();
     }
+
     // Device scan callback.
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
@@ -370,8 +371,9 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
                                 String deviceAddress = arrayListAddress.get(arrayListAddress.size() - 1);
                                 String deviceName = arrayListName.get(arrayListName.size() - 1);
                                 Toast.makeText(MainActivity.this,
-                                        device.getName() + " " + device.getAddress(),Toast.LENGTH_LONG).show();
+                                        device.getName() + " " + device.getAddress(), Toast.LENGTH_LONG).show();
 
+                                sendMacGetOffers(deviceAddress);
 //                                tv_deviceName.setText(deviceName);
 //                                tv_deviceAddress.setText(deviceAddress);
 //                                }
@@ -445,6 +447,7 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
 
         scanLeDevice(true);
     }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -463,4 +466,71 @@ public class MainActivity extends Activity implements AdapterProducts.ClickListe
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+
+    /**
+     * Offers request methods
+     */
+    private void sendMacGetOffers(final String address) {
+        StringRequest request = new StringRequest(Request.Method.POST,
+                Endpoints.URL_OFFERS,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("Lifecycle3", response.toString());
+                        JSONArray jsonArray = null;
+                        try {
+                            jsonArray = new JSONArray(response);
+                            ArrayList<String> offerList = parseJSON(jsonArray);
+
+                            for (int i=0;i<offerList.size();i++) {
+                                showCrouton(offerList.get(i));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError volleyError) {
+                        Log.d("Lifecycle4", volleyError.toString());
+                    }
+                }){
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                //Posting error to login URL
+                Map<String,String> params = new HashMap<String, String>();
+                params.put("mac",address);
+                params.put("emailid","rohan2970@gmail.com");
+                return params;
+            }
+        };
+        requestQueue.add(request);
+    }
+
+    private ArrayList<String> parseJSON(JSONArray response) {
+        ArrayList<String> listOffers = new ArrayList<String>();
+        if (response != null && response.length() > 0) {
+            try {
+                StringBuilder data = new StringBuilder();
+                JSONArray jsonArray = response;
+                Log.d("Lifecycle1", String.valueOf(response.length()));
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    Log.d("Lifecycle", "Inside loop");
+
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    String offerDesc = jsonObject.getString("offer");
+
+                    data.append(offerDesc + " " + "\n");
+
+                    listOffers.add(offerDesc);
+                    Log.d("Lifecycle", "Inside loop");
+                }
+                Log.d("Lifecycle2", listOffers.toString());
+            } catch (JSONException e) {
+                Log.d("Lifecycle", "Inside JSON EXCEPTION: " + e);
+            }
+        }
+        return listOffers;
+    }
 }
